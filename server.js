@@ -1,6 +1,8 @@
 const http = require('http');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
+const { URL } = require('url');
 const { Client } = require('@notionhq/client');
 const fixtures = require('./lib/fixtures.json');
 // Charger .env.local en priorité, puis .env
@@ -186,7 +188,7 @@ const server = http.createServer(async (req, res) => {
 
   if (req.url.startsWith('/api/texte/') && req.method === 'GET') {
     try {
-      const slug = req.url.split('/api/texte/')[1];
+      const slug = req.url.split('/api/texte/')[1].split('?')[0];
       const textes = await fetchAllTextes();
       const texte = textes.find(t => t.slug === slug);
       if (texte) {
@@ -201,6 +203,37 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify({ error: error.message }));
     }
     return;
+  }
+
+  // Proxy pour les images (pour accélérer le chargement)
+  if (req.url.startsWith('/api/image/') && req.method === 'GET') {
+    try {
+      const imageUrl = decodeURIComponent(req.url.split('/api/image/')[1].split('?')[0]);
+      if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+        res.writeHead(400);
+        res.end('URL invalide');
+        return;
+      }
+      
+      const url = new URL(imageUrl);
+      const client = url.protocol === 'https:' ? https : http;
+      
+      client.get(url.href, (imageRes) => {
+        res.writeHead(imageRes.statusCode, {
+          'Content-Type': imageRes.headers['content-type'] || 'image/jpeg',
+          'Cache-Control': 'public, max-age=31536000', // Cache 1 an
+        });
+        imageRes.pipe(res);
+      }).on('error', (err) => {
+        res.writeHead(500);
+        res.end('Erreur lors du chargement de l\'image');
+      });
+      return;
+    } catch (error) {
+      res.writeHead(500);
+      res.end(JSON.stringify({ error: error.message }));
+      return;
+    }
   }
 
   // Servir les fichiers statiques (HTML, JS)

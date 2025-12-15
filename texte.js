@@ -31,9 +31,18 @@ function afficherTexte(texte) {
     
     // Afficher l'image si elle existe
     if (texte.image) {
+        // Utiliser le proxy pour accélérer le chargement
+        const imageSrc = `/api/image/${encodeURIComponent(texte.image)}`;
         imageDiv.innerHTML = `
             <div style="width: 200px; flex-shrink: 0;">
-                <img src="${texte.image}" alt="${texte.title}" style="width: 100%; height: auto; display: block;" />
+                <img 
+                    src="${imageSrc}" 
+                    alt="${texte.title}" 
+                    loading="lazy"
+                    decoding="async"
+                    style="width: 100%; height: auto; display: block;" 
+                    onerror="this.style.display='none'"
+                />
             </div>
         `;
     } else {
