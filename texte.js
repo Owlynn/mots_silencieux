@@ -1,38 +1,59 @@
 const API_URL = '/api/texte';
 
+// Références DOM en cache
+const elements = {
+    loader: null,
+    heroSection: null,
+    heroTitle: null,
+    heroDate: null,
+    texteText: null
+};
+
 function getSlugFromURL() {
     const params = new URLSearchParams(window.location.search);
     return params.get('slug');
 }
 
+function initElements() {
+    elements.loader = document.getElementById('loader');
+    elements.heroSection = document.getElementById('hero-section');
+    elements.heroTitle = document.getElementById('hero-title');
+    elements.heroDate = document.getElementById('hero-date');
+    elements.texteText = document.getElementById('texte-text');
+}
+
 function showLoader() {
-    const loader = document.getElementById('loader');
-    const heroSection = document.getElementById('hero-section');
-    if (loader && heroSection) {
-        loader.classList.add('active');
-        heroSection.style.opacity = '0.3';
+    if (elements.loader && elements.heroSection) {
+        elements.loader.classList.add('active');
+        elements.heroSection.style.opacity = '0.3';
     }
 }
 
 function hideLoader() {
-    const loader = document.getElementById('loader');
-    const heroSection = document.getElementById('hero-section');
-    if (loader && heroSection) {
-        loader.classList.remove('active');
-        heroSection.style.opacity = '1';
+    if (elements.loader && elements.heroSection) {
+        elements.loader.classList.remove('active');
+        elements.heroSection.style.opacity = '1';
     }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 async function chargerTexte() {
     const slug = getSlugFromURL();
     if (!slug) {
-        document.getElementById('texte-text').innerHTML = '<p>Slug manquant</p>';
+        if (elements.texteText) {
+            elements.texteText.innerHTML = '<p>Slug manquant</p>';
+        }
         hideLoader();
         return;
     }
 
-    // Afficher le loader
     showLoader();
+    let loaderTimeout;
 
     try {
         const response = await fetch(`${API_URL}/${slug}`);
@@ -41,31 +62,36 @@ async function chargerTexte() {
         }
         const texte = await response.json();
         
-        // Afficher le texte immédiatement
         afficherTexte(texte);
         
         // Attendre que l'image soit chargée si elle existe
         if (texte.image) {
             const imageSrc = `/api/image/${encodeURIComponent(texte.image)}`;
             const img = new Image();
-            img.onload = () => {
-                hideLoader();
+            let imageLoaded = false;
+            
+            const finishLoading = () => {
+                if (!imageLoaded) {
+                    imageLoaded = true;
+                    if (loaderTimeout) clearTimeout(loaderTimeout);
+                    hideLoader();
+                }
             };
-            img.onerror = () => {
-                hideLoader();
-            };
+            
+            img.onload = finishLoading;
+            img.onerror = finishLoading;
             img.src = imageSrc;
+            
+            // Timeout de sécurité
+            loaderTimeout = setTimeout(finishLoading, 5000);
         } else {
             hideLoader();
         }
-        
-        // Timeout de sécurité au cas où l'image ne se charge pas
-        setTimeout(() => {
-            hideLoader();
-        }, 5000);
     } catch (error) {
         console.error('Erreur lors du chargement du texte:', error);
-        document.getElementById('texte-text').innerHTML = '<p>Erreur lors du chargement du texte</p>';
+        if (elements.texteText) {
+            elements.texteText.innerHTML = '<p>Erreur lors du chargement du texte</p>';
+        }
         hideLoader();
     }
 }
@@ -89,41 +115,45 @@ function formaterDate(dateString) {
 }
 
 function afficherTexte(texte) {
-    const heroSection = document.getElementById('hero-section');
-    const heroTitle = document.getElementById('hero-title');
-    const heroDate = document.getElementById('hero-date');
-    const textDiv = document.getElementById('texte-text');
+    if (!elements.heroSection || !elements.heroTitle || !elements.heroDate || !elements.texteText) {
+        return;
+    }
     
     // Configurer le hero avec l'image en background
     if (texte.image) {
         const imageSrc = `/api/image/${encodeURIComponent(texte.image)}`;
-        heroSection.style.backgroundImage = `url('${imageSrc}')`;
-        heroSection.style.backgroundSize = 'cover';
-        heroSection.style.backgroundPosition = 'center';
-        heroSection.style.backgroundRepeat = 'no-repeat';
+        elements.heroSection.style.backgroundImage = `url('${imageSrc}')`;
+        elements.heroSection.style.backgroundSize = 'cover';
+        elements.heroSection.style.backgroundPosition = 'center';
+        elements.heroSection.style.backgroundRepeat = 'no-repeat';
+        elements.heroSection.style.backgroundColor = '';
     } else {
-        // Si pas d'image, utiliser la couleur de fond (couleur depuis CSS)
         const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
-        heroSection.style.backgroundColor = bgColor || '#dbe7c5';
+        elements.heroSection.style.backgroundColor = bgColor || '#dbe7c5';
+        elements.heroSection.style.backgroundImage = '';
     }
     
-    // Afficher le titre et la date dans le hero
-    heroTitle.textContent = texte.title;
+    // Afficher le titre et la date dans le hero (échappé pour sécurité)
+    elements.heroTitle.textContent = texte.title || '';
     if (texte.date) {
         const dateFormatee = formaterDate(texte.date);
-        heroDate.innerHTML = `<time datetime="${texte.date}">${dateFormatee}</time>`;
+        elements.heroDate.innerHTML = `<time datetime="${escapeHtml(texte.date)}">${escapeHtml(dateFormatee)}</time>`;
     } else {
-        heroDate.innerHTML = '';
+        elements.heroDate.innerHTML = '';
     }
     
-    // Afficher uniquement le contenu du texte
-    textDiv.innerHTML = `
-        <div>${texte.content ? texte.content.replace(/\n/g, '<br>') : ''}</div>
-    `;
+    // Afficher le contenu du texte (échappé pour sécurité)
+    if (texte.content) {
+        const contentEscaped = escapeHtml(texte.content).replace(/\n/g, '<br>');
+        elements.texteText.innerHTML = `<div>${contentEscaped}</div>`;
+    } else {
+        elements.texteText.innerHTML = '';
+    }
 }
 
 // Menu burger et chargement du texte
 document.addEventListener('DOMContentLoaded', () => {
+    initElements();
     chargerTexte();
     
     const burgerMenu = document.getElementById('burger-menu');

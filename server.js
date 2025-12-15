@@ -107,10 +107,23 @@ async function mapNotionPageToItem(page) {
   };
 }
 
+// Cache simple pour les textes (5 minutes)
+let textesCache = null;
+let cacheTimestamp = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 async function fetchAllTextes() {
+  // Vérifier le cache
+  if (textesCache && cacheTimestamp && Date.now() - cacheTimestamp < CACHE_DURATION) {
+    return textesCache;
+  }
+
   if (!notion || !DATABASE_ID) {
     console.log('⚠️ Utilisation des fixtures (Notion non configuré)');
-    return fixtures.filter(item => item && item.title);
+    const result = fixtures.filter(item => item && item.title);
+    textesCache = result;
+    cacheTimestamp = Date.now();
+    return result;
   }
 
   try {
@@ -148,14 +161,20 @@ async function fetchAllTextes() {
       return dateB - dateA;
     });
     
-    let items = (await Promise.all(sortedPages.map(mapNotionPageToItem)))
+    const items = (await Promise.all(sortedPages.map(mapNotionPageToItem)))
       .filter(item => item && item.title && item.published !== false);
+    
+    // Mettre en cache
+    textesCache = items;
+    cacheTimestamp = Date.now();
     
     console.log('✅ Notion: Récupéré', items.length, 'textes');
     return items;
   } catch (error) {
     console.error('Erreur Notion:', error);
-    return fixtures.filter(item => item && item.title);
+    const result = fixtures.filter(item => item && item.title);
+    // En cas d'erreur, utiliser le cache si disponible, sinon les fixtures
+    return textesCache || result;
   }
 }
 

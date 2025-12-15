@@ -65,7 +65,8 @@ header {
   box-sizing: border-box;
 }
 
-header h1 {
+header h1,
+header h1 a {
   margin: 0;
   font-weight: 100;
   letter-spacing: 0.08em;
@@ -75,14 +76,6 @@ header h1 {
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-stroke: 0.3px transparent;
   text-rendering: optimizeLegibility;
-}
-
-header h1,
-header h1 a {
-  font-weight: 100;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-text-stroke: 0.3px transparent;
 }
 
 header a {

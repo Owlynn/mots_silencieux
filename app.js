@@ -37,26 +37,33 @@ function calculerItemsParPage() {
     itemsParPage = Math.max(nombreColonnes * 3, 9); // Minimum 9 items
 }
 
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 function afficherTextes() {
     const liste = document.getElementById('liste-textes');
     const loader = document.getElementById('loader');
+    if (!liste || !loader) return;
     
-    // Afficher le loader
     loader.classList.add('active');
     liste.style.opacity = '0.3';
-    
     liste.innerHTML = '';
     
     const debut = (pageActuelle - 1) * itemsParPage;
     const fin = debut + itemsParPage;
     const textesAPager = tousLesTextes.slice(debut, fin);
-    
     const imagesPromises = [];
     
     textesAPager.forEach(texte => {
         const card = document.createElement('a');
-        card.href = `texte.html?slug=${texte.slug}`;
+        card.href = `texte.html?slug=${encodeURIComponent(texte.slug)}`;
         card.className = texte.image ? 'card' : 'card card-no-image';
+        
+        const titleEscaped = escapeHtml(texte.title);
         
         if (texte.image) {
             const imageUrl = `/api/image/${encodeURIComponent(texte.image)}`;
@@ -65,20 +72,17 @@ function afficherTextes() {
                     <div class="card-front">
                         <img 
                             src="${imageUrl}" 
-                            alt="${texte.title}" 
+                            alt="${titleEscaped}" 
                             loading="lazy"
                             decoding="async"
                         />
                     </div>
                     <div class="card-back">
-                        <div class="card-title">
-                            ${texte.title}
-                        </div>
+                        <div class="card-title">${titleEscaped}</div>
                     </div>
                 </div>
             `;
             
-            // Attendre le chargement de l'image
             const img = card.querySelector('img');
             if (img) {
                 const imgPromise = new Promise((resolve) => {
@@ -86,7 +90,7 @@ function afficherTextes() {
                         resolve();
                     } else {
                         img.onload = resolve;
-                        img.onerror = resolve; // Résoudre même en cas d'erreur
+                        img.onerror = resolve;
                     }
                 });
                 imagesPromises.push(imgPromise);
@@ -95,14 +99,10 @@ function afficherTextes() {
             card.innerHTML = `
                 <div class="card-inner">
                     <div class="card-front">
-                        <div class="card-title">
-                            ${texte.title}
-                        </div>
+                        <div class="card-title">${titleEscaped}</div>
                     </div>
                     <div class="card-back">
-                        <div class="card-title">
-                            ${texte.title}
-                        </div>
+                        <div class="card-title">${titleEscaped}</div>
                     </div>
                 </div>
             `;
@@ -111,18 +111,19 @@ function afficherTextes() {
         liste.appendChild(card);
     });
     
-    // Attendre que toutes les images soient chargées
-    Promise.all(imagesPromises).then(() => {
+    let loaderTimeout;
+    const finishLoading = () => {
+        if (loaderTimeout) clearTimeout(loaderTimeout);
         loader.classList.remove('active');
         liste.style.opacity = '1';
         afficherPagination();
-    });
+    };
     
-    // Timeout de sécurité au cas où certaines images ne se chargent pas
-    setTimeout(() => {
-        loader.classList.remove('active');
-        liste.style.opacity = '1';
-    }, 5000);
+    // Attendre que toutes les images soient chargées
+    Promise.all(imagesPromises).then(finishLoading);
+    
+    // Timeout de sécurité
+    loaderTimeout = setTimeout(finishLoading, 5000);
 }
 
 function positionnerFleches() {
@@ -226,9 +227,9 @@ function changerPage(nouvellePage) {
     }
 }
 
-// Recalculer lors du redimensionnement
+// Debounce pour le redimensionnement
 let resizeTimeout;
-window.addEventListener('resize', () => {
+const handleResize = () => {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => {
         calculerItemsParPage();
@@ -236,11 +237,21 @@ window.addEventListener('resize', () => {
         afficherTextes();
         setTimeout(positionnerFleches, 100);
     }, 250);
-});
+};
 
-window.addEventListener('scroll', () => {
-    positionnerFleches();
-});
+// Debounce pour le scroll avec requestAnimationFrame
+let scrollAnimationFrame;
+const handleScroll = () => {
+    if (scrollAnimationFrame) {
+        cancelAnimationFrame(scrollAnimationFrame);
+    }
+    scrollAnimationFrame = requestAnimationFrame(() => {
+        positionnerFleches();
+    });
+};
+
+window.addEventListener('resize', handleResize, { passive: true });
+window.addEventListener('scroll', handleScroll, { passive: true });
 
 // Menu burger
 document.addEventListener('DOMContentLoaded', () => {
