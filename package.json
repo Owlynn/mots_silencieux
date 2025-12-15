@@ -1,0 +1,12 @@
+{
+  "name": "des-mots-silencieux",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@notionhq/client": "^5.3.0",
+    "dotenv": "^17.2.3"
+  }
+}

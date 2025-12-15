@@ -1,0 +1,23 @@
+[
+  {
+    "title": "Silence des feuilles",
+    "date": "2025-11-12",
+    "slug": "silence-des-feuilles",
+    "image": "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1600&auto=format&fit=crop",
+    "content": "Parmi les feuilles, un souffle à peine. Les mots s'y posent et s'envolent dans le même mouvement."
+  },
+  {
+    "title": "Marée basse",
+    "date": "2025-10-02",
+    "slug": "maree-basse",
+    "image": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1600&auto=format&fit=crop",
+    "content": "Le sable retient l'écho des pas. La mer se retire, le ciel se penche."
+  },
+  {
+    "title": "Lisière",
+    "date": "2025-09-14",
+    "slug": "lisiere",
+    "image": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop",
+    "content": "Au bord du bois, la lumière hésite. Les voix se taisent, le cœur écoute."
+  }
+]
