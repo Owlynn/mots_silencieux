@@ -90,7 +90,7 @@ header nav a {
   background-color: var(--bg);
   border-right: 1px solid var(--text);
   padding: 80px 30px 30px;
-  transition: left 0.3s ease;
+  transition: left 0.3s ease, visibility 0.3s ease;
   z-index: 1000;
   box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
   overflow-y: auto;

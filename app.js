@@ -16,6 +16,12 @@ async function chargerTextes() {
 }
 
 function calculerItemsParPage() {
+    // Sur mobile, afficher 10 items (2 colonnes × 5 lignes)
+    if (window.innerWidth <= 768) {
+        itemsParPage = 10;
+        return;
+    }
+    
     // Calculer le nombre de colonnes basé sur la largeur de la grille
     const grille = document.getElementById('liste-textes');
     if (!grille) return;
