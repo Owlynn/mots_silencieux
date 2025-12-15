@@ -86,9 +86,69 @@ function afficherTextes() {
     afficherPagination();
 }
 
+function positionnerFleches() {
+    const grille = document.getElementById('liste-textes');
+    if (!grille || grille.children.length === 0) return;
+    
+    // Calculer la position de la 2e ligne
+    const premierElement = grille.children[0];
+    const rectGrille = grille.getBoundingClientRect();
+    const rectPremier = premierElement.getBoundingClientRect();
+    const hauteurCarte = rectPremier.height;
+    const gap = 20; // gap de la grille
+    
+    // Position de la 2e ligne (1 ligne de hauteur + gap)
+    const topPosition = rectGrille.top + hauteurCarte + gap + (hauteurCarte / 2);
+    
+    // Mettre à jour la position des flèches
+    const flecheGauche = document.querySelector('.nav-arrow-left');
+    const flecheDroite = document.querySelector('.nav-arrow-right');
+    
+    if (flecheGauche) flecheGauche.style.top = `${topPosition}px`;
+    if (flecheDroite) flecheDroite.style.top = `${topPosition}px`;
+}
+
 function afficherPagination() {
     const totalPages = Math.ceil(tousLesTextes.length / itemsParPage);
     
+    // Boutons flèches positionnés de manière fixe
+    let navigationContainer = document.getElementById('navigation-container');
+    if (!navigationContainer) {
+        navigationContainer = document.createElement('div');
+        navigationContainer.id = 'navigation-container';
+        document.body.appendChild(navigationContainer);
+    }
+    
+    navigationContainer.innerHTML = '';
+    
+    if (totalPages <= 1) {
+        navigationContainer.style.display = 'none';
+    } else {
+        navigationContainer.style.display = 'block';
+        
+        // Bouton précédent - affiché seulement si pas sur la première page
+        if (pageActuelle > 1) {
+            const btnPrev = document.createElement('button');
+            btnPrev.className = 'nav-arrow nav-arrow-left';
+            btnPrev.innerHTML = '←';
+            btnPrev.onclick = () => changerPage(pageActuelle - 1);
+            navigationContainer.appendChild(btnPrev);
+        }
+        
+        // Bouton suivant - affiché seulement si pas sur la dernière page
+        if (pageActuelle < totalPages) {
+            const btnNext = document.createElement('button');
+            btnNext.className = 'nav-arrow nav-arrow-right';
+            btnNext.innerHTML = '→';
+            btnNext.onclick = () => changerPage(pageActuelle + 1);
+            navigationContainer.appendChild(btnNext);
+        }
+        
+        // Positionner les flèches après un petit délai pour que le DOM soit rendu
+        setTimeout(positionnerFleches, 100);
+    }
+    
+    // Container pour les ronds de pagination
     let pagination = document.getElementById('pagination');
     if (!pagination) {
         pagination = document.createElement('div');
@@ -98,45 +158,21 @@ function afficherPagination() {
     
     pagination.innerHTML = '';
     
-    if (totalPages <= 1) return;
-    
-    // Bouton précédent
-    const btnPrev = document.createElement('button');
-    btnPrev.className = 'pagination-btn';
-    btnPrev.textContent = '←';
-    btnPrev.disabled = pageActuelle === 1;
-    btnPrev.onclick = () => changerPage(pageActuelle - 1);
-    pagination.appendChild(btnPrev);
-    
-    // Numéros de pages
+    // Petits ronds pour chaque page
     for (let i = 1; i <= totalPages; i++) {
-        if (i === 1 || i === totalPages || (i >= pageActuelle - 1 && i <= pageActuelle + 1)) {
-            const btn = document.createElement('button');
-            btn.className = `pagination-btn ${i === pageActuelle ? 'active' : ''}`;
-            btn.textContent = i;
-            btn.onclick = () => changerPage(i);
-            pagination.appendChild(btn);
-        } else if (i === pageActuelle - 2 || i === pageActuelle + 2) {
-            const span = document.createElement('span');
-            span.textContent = '...';
-            span.className = 'pagination-dots';
-            pagination.appendChild(span);
-        }
+        const dot = document.createElement('button');
+        dot.className = `pagination-dot ${i === pageActuelle ? 'active' : ''}`;
+        dot.setAttribute('aria-label', `Page ${i}`);
+        dot.onclick = () => changerPage(i);
+        pagination.appendChild(dot);
     }
-    
-    // Bouton suivant
-    const btnNext = document.createElement('button');
-    btnNext.className = 'pagination-btn';
-    btnNext.textContent = '→';
-    btnNext.disabled = pageActuelle === totalPages;
-    btnNext.onclick = () => changerPage(pageActuelle + 1);
-    pagination.appendChild(btnNext);
 }
 
 function changerPage(nouvellePage) {
     if (nouvellePage < 1 || nouvellePage > Math.ceil(tousLesTextes.length / itemsParPage)) return;
     pageActuelle = nouvellePage;
     afficherTextes();
+    afficherPagination();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -148,7 +184,12 @@ window.addEventListener('resize', () => {
         calculerItemsParPage();
         pageActuelle = 1;
         afficherTextes();
+        setTimeout(positionnerFleches, 100);
     }, 250);
+});
+
+window.addEventListener('scroll', () => {
+    positionnerFleches();
 });
 
 // Charger les textes au chargement de la page
