@@ -56,6 +56,31 @@ function afficherTexte(texte) {
     `;
 }
 
-// Charger le texte au chargement de la page
-document.addEventListener('DOMContentLoaded', chargerTexte);
+// Menu burger et chargement du texte
+document.addEventListener('DOMContentLoaded', () => {
+    chargerTexte();
+    
+    const burgerMenu = document.getElementById('burger-menu');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    
+    function toggleMenu() {
+        burgerMenu.classList.toggle('active');
+        sidebar.classList.toggle('active');
+        overlay.classList.toggle('active');
+    }
+    
+    if (burgerMenu && sidebar && overlay) {
+        burgerMenu.addEventListener('click', toggleMenu);
+        overlay.addEventListener('click', toggleMenu);
+        
+        // Fermer le menu quand on clique sur un lien
+        const sidebarLinks = sidebar.querySelectorAll('nav a');
+        sidebarLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                setTimeout(toggleMenu, 100);
+            });
+        });
+    }
+});
 
