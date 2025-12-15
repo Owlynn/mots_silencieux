@@ -34,13 +34,12 @@ function afficherTexte(texte) {
         // Utiliser le proxy pour accélérer le chargement
         const imageSrc = `/api/image/${encodeURIComponent(texte.image)}`;
         imageDiv.innerHTML = `
-            <div style="width: 200px; flex-shrink: 0;">
+            <div style="width: 200px;">
                 <img 
                     src="${imageSrc}" 
                     alt="${texte.title}" 
                     loading="lazy"
                     decoding="async"
-                    style="width: 100%; height: auto; display: block;" 
                     onerror="this.style.display='none'"
                 />
             </div>

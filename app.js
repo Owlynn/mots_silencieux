@@ -18,27 +18,39 @@ function afficherTextes(textes) {
     textes.forEach(texte => {
         const card = document.createElement('a');
         card.href = `texte.html?slug=${texte.slug}`;
-        card.style.cssText = 'display: block; position: relative; aspect-ratio: 1; overflow: hidden; text-decoration: none;';
+        card.className = texte.image ? 'card' : 'card card-no-image';
         
         if (texte.image) {
             const imageUrl = `/api/image/${encodeURIComponent(texte.image)}`;
             card.innerHTML = `
-                <img 
-                    src="${imageUrl}" 
-                    alt="${texte.title}" 
-                    loading="lazy"
-                    decoding="async"
-                    style="width: 100%; height: 100%; object-fit: cover; display: block;"
-                />
-                <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(255, 255, 255, 0.9); color: black; padding: 10px; text-align: center; font-weight: bold; z-index: 1;">
-                    ${texte.title}
+                <div class="card-inner">
+                    <div class="card-front">
+                        <img 
+                            src="${imageUrl}" 
+                            alt="${texte.title}" 
+                            loading="lazy"
+                            decoding="async"
+                        />
+                    </div>
+                    <div class="card-back">
+                        <div class="card-title">
+                            ${texte.title}
+                        </div>
+                    </div>
                 </div>
             `;
         } else {
             card.innerHTML = `
-                <div style="width: 100%; height: 100%; background: #f0f0f0; display: flex; align-items: center; justify-content: center; position: relative;">
-                    <div style="position: absolute; bottom: 0; left: 0; right: 0; background: white; color: black; padding: 10px; text-align: center; font-weight: bold;">
-                        ${texte.title}
+                <div class="card-inner">
+                    <div class="card-front">
+                        <div class="card-title">
+                            ${texte.title}
+                        </div>
+                    </div>
+                    <div class="card-back">
+                        <div class="card-title">
+                            ${texte.title}
+                        </div>
                     </div>
                 </div>
             `;
