@@ -11,6 +11,35 @@ html, body {
   margin: 0;
 }
 
+/* Skip link pour l'accessibilité */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--card-back);
+  color: var(--bg);
+  padding: 8px;
+  text-decoration: none;
+  z-index: 10000;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* Classe pour le contenu visible uniquement pour les lecteurs d'écran */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
 body {
   background-color: var(--bg);
   color: var(--text);
@@ -50,6 +79,13 @@ header nav a {
   font-size: 0.9em;
 }
 
+header nav a:focus-visible,
+header h1 a:focus-visible {
+  outline: 2px solid var(--card-back);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 /* Menu burger */
 .burger-menu {
   display: none;
@@ -59,6 +95,15 @@ header nav a {
   padding: 5px;
   z-index: 1001;
   position: relative;
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.burger-menu:focus-visible {
+  outline: 2px solid var(--card-back);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 .burger-menu span {
@@ -114,6 +159,12 @@ header nav a {
   text-decoration: none;
   font-size: 1em;
   padding: 10px 0;
+}
+
+.sidebar nav a:focus-visible {
+  outline: 2px solid var(--card-back);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 /* Overlay pour fermer le menu */
@@ -301,6 +352,11 @@ main {
   box-shadow: 0 4px 12px rgba(27, 82, 11, 0.15);
 }
 
+.nav-arrow:focus-visible {
+  outline: 3px solid var(--card-back);
+  outline-offset: 2px;
+}
+
 /* Pagination avec ronds */
 #pagination {
   display: flex;
@@ -336,6 +392,11 @@ main {
   height: 14px;
 }
 
+.pagination-dot:focus-visible {
+  outline: 2px solid var(--card-back);
+  outline-offset: 2px;
+}
+
 /* Cartes avec effet flip 3D */
 .card {
   display: block;
@@ -344,6 +405,12 @@ main {
   overflow: hidden;
   text-decoration: none;
   perspective: 1200px;
+}
+
+.card:focus-visible {
+  outline: 3px solid var(--card-back);
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
 .card-inner {
@@ -423,6 +490,7 @@ main {
   margin: 0 auto;
 }
 
+#texte-text h1,
 #texte-text h2 {
   color: var(--title);
   margin-top: 0;

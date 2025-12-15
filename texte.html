@@ -7,26 +7,28 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <a href="#main-content" class="skip-link">Aller au contenu principal</a>
     <header>
         <h1><a href="index.html">Des mots silencieux</a></h1>
-        <div class="burger-menu" id="burger-menu">
+        <button class="burger-menu" id="burger-menu" aria-label="Ouvrir le menu de navigation" aria-expanded="false" aria-controls="sidebar">
             <span></span>
             <span></span>
             <span></span>
-        </div>
-        <nav id="header-nav">
+        </button>
+        <nav id="header-nav" aria-label="Navigation principale">
             <a href="index.html">textes</a>
             <a href="https://www.jessalynn.fr" target="_blank" rel="noopener noreferrer">l'autrice</a>
         </nav>
     </header>
     <div class="overlay" id="overlay"></div>
-    <div class="sidebar" id="sidebar">
+    <div class="sidebar" id="sidebar" role="navigation" aria-label="Menu de navigation">
         <nav>
             <a href="index.html">textes</a>
             <a href="https://www.jessalynn.fr" target="_blank" rel="noopener noreferrer">l'autrice</a>
         </nav>
     </div>
-    <main>
+    <main id="main-content">
+        <div id="aria-live-region" class="sr-only" aria-live="polite" aria-atomic="true"></div>
         <div id="texte-content">
             <div id="texte-image"></div>
             <div id="texte-text"></div>

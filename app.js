@@ -170,6 +170,7 @@ function afficherPagination() {
             const btnPrev = document.createElement('button');
             btnPrev.className = 'nav-arrow nav-arrow-left';
             btnPrev.innerHTML = '←';
+            btnPrev.setAttribute('aria-label', 'Page précédente');
             btnPrev.onclick = () => changerPage(pageActuelle - 1);
             navigationContainer.appendChild(btnPrev);
         }
@@ -179,6 +180,7 @@ function afficherPagination() {
             const btnNext = document.createElement('button');
             btnNext.className = 'nav-arrow nav-arrow-right';
             btnNext.innerHTML = '→';
+            btnNext.setAttribute('aria-label', 'Page suivante');
             btnNext.onclick = () => changerPage(pageActuelle + 1);
             navigationContainer.appendChild(btnNext);
         }
@@ -201,7 +203,10 @@ function afficherPagination() {
     for (let i = 1; i <= totalPages; i++) {
         const dot = document.createElement('button');
         dot.className = `pagination-dot ${i === pageActuelle ? 'active' : ''}`;
-        dot.setAttribute('aria-label', `Page ${i}`);
+        dot.setAttribute('aria-label', `Aller à la page ${i}`);
+        if (i === pageActuelle) {
+            dot.setAttribute('aria-current', 'page');
+        }
         dot.onclick = () => changerPage(i);
         pagination.appendChild(dot);
     }
@@ -213,6 +218,12 @@ function changerPage(nouvellePage) {
     afficherTextes();
     afficherPagination();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Annoncer le changement de page aux lecteurs d'écran
+    const ariaLive = document.getElementById('aria-live-region');
+    if (ariaLive) {
+        ariaLive.textContent = `Page ${nouvellePage} sur ${Math.ceil(tousLesTextes.length / itemsParPage)}`;
+    }
 }
 
 // Recalculer lors du redimensionnement
@@ -239,21 +250,69 @@ document.addEventListener('DOMContentLoaded', () => {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('overlay');
     
-    function toggleMenu() {
-        burgerMenu.classList.toggle('active');
-        sidebar.classList.toggle('active');
-        overlay.classList.toggle('active');
+    function toggleMenu(open) {
+        const isOpen = open !== undefined ? open : burgerMenu.classList.contains('active');
+        
+        if (!isOpen) {
+            // Ouvrir le menu
+            burgerMenu.classList.add('active');
+            sidebar.classList.add('active');
+            overlay.classList.add('active');
+            burgerMenu.setAttribute('aria-expanded', 'true');
+            burgerMenu.setAttribute('aria-label', 'Fermer le menu de navigation');
+            // Focus sur le premier lien du menu
+            const firstLink = sidebar.querySelector('nav a');
+            if (firstLink) {
+                setTimeout(() => firstLink.focus(), 100);
+            }
+            // Empêcher le scroll du body
+            document.body.style.overflow = 'hidden';
+        } else {
+            // Fermer le menu
+            burgerMenu.classList.remove('active');
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+            burgerMenu.setAttribute('aria-expanded', 'false');
+            burgerMenu.setAttribute('aria-label', 'Ouvrir le menu de navigation');
+            // Restaurer le scroll du body
+            document.body.style.overflow = '';
+        }
     }
     
     if (burgerMenu && sidebar && overlay) {
-        burgerMenu.addEventListener('click', toggleMenu);
-        overlay.addEventListener('click', toggleMenu);
+        burgerMenu.addEventListener('click', () => toggleMenu());
+        overlay.addEventListener('click', () => toggleMenu(true));
+        
+        // Gérer la touche Escape pour fermer le menu
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && burgerMenu.classList.contains('active')) {
+                toggleMenu(true);
+                burgerMenu.focus();
+            }
+        });
+        
+        // Trap de focus dans le menu (boucle Tab uniquement dans le menu)
+        sidebar.addEventListener('keydown', (e) => {
+            if (e.key !== 'Tab' || !burgerMenu.classList.contains('active')) return;
+            
+            const focusableElements = sidebar.querySelectorAll('nav a');
+            const firstElement = focusableElements[0];
+            const lastElement = focusableElements[focusableElements.length - 1];
+            
+            if (e.shiftKey && document.activeElement === firstElement) {
+                e.preventDefault();
+                lastElement.focus();
+            } else if (!e.shiftKey && document.activeElement === lastElement) {
+                e.preventDefault();
+                firstElement.focus();
+            }
+        });
         
         // Fermer le menu quand on clique sur un lien
         const sidebarLinks = sidebar.querySelectorAll('nav a');
         sidebarLinks.forEach(link => {
             link.addEventListener('click', () => {
-                setTimeout(toggleMenu, 100);
+                setTimeout(() => toggleMenu(true), 100);
             });
         });
     }
