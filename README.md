@@ -1,5 +1,7 @@
 # Des mots silencieux
 
+🌐 **Site en ligne :** [https://mots-silencieux.vercel.app/](https://mots-silencieux.vercel.app/)
+
 Site simple en HTML/JS pour afficher des textes récupérés depuis Notion.
 
 ## Installation
