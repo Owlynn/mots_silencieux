@@ -8,7 +8,7 @@ function getSlugFromURL() {
 async function chargerTexte() {
     const slug = getSlugFromURL();
     if (!slug) {
-        document.getElementById('texte-content').innerHTML = '<p>Slug manquant</p>';
+        document.getElementById('texte-text').innerHTML = '<p>Slug manquant</p>';
         return;
     }
 
@@ -21,13 +21,27 @@ async function chargerTexte() {
         afficherTexte(texte);
     } catch (error) {
         console.error('Erreur lors du chargement du texte:', error);
-        document.getElementById('texte-content').innerHTML = '<p>Erreur lors du chargement du texte</p>';
+        document.getElementById('texte-text').innerHTML = '<p>Erreur lors du chargement du texte</p>';
     }
 }
 
 function afficherTexte(texte) {
-    const content = document.getElementById('texte-content');
-    content.innerHTML = `
+    const imageDiv = document.getElementById('texte-image');
+    const textDiv = document.getElementById('texte-text');
+    
+    // Afficher l'image si elle existe
+    if (texte.image) {
+        imageDiv.innerHTML = `
+            <div style="width: 200px; flex-shrink: 0;">
+                <img src="${texte.image}" alt="${texte.title}" style="width: 100%; height: auto; display: block;" />
+            </div>
+        `;
+    } else {
+        imageDiv.innerHTML = '';
+    }
+    
+    // Afficher le texte
+    textDiv.innerHTML = `
         <h2>${texte.title}</h2>
         ${texte.date ? `<p>Date: ${texte.date}</p>` : ''}
         <div>${texte.content ? texte.content.replace(/\n/g, '<br>') : ''}</div>

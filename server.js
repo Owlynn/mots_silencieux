@@ -3,7 +3,9 @@ const fs = require('fs');
 const path = require('path');
 const { Client } = require('@notionhq/client');
 const fixtures = require('./lib/fixtures.json');
-require('dotenv').config();
+// Charger .env.local en priorité, puis .env
+require('dotenv').config({ path: '.env.local' });
+require('dotenv').config(); // .env en fallback
 
 const notion = process.env.NOTION_TOKEN && process.env.NOTION_DATABASE_ID
   ? new Client({ auth: process.env.NOTION_TOKEN })
@@ -19,6 +21,20 @@ function getText(prop) {
   }
   if (prop.type === 'rich_text' && prop.rich_text) {
     return prop.rich_text.map(t => t.plain_text).join('');
+  }
+  if (prop.type === 'url' && prop.url) {
+    return prop.url;
+  }
+  // Pour les images/files
+  if (prop.type === 'files' && prop.files && prop.files.length > 0) {
+    const file = prop.files[0];
+    if (file.type === 'external' && file.external?.url) {
+      return file.external.url;
+    }
+    if (file.type === 'file' && file.file?.url) {
+      return file.file.url;
+    }
+    if (file.url) return file.url;
   }
   return '';
 }
@@ -54,6 +70,21 @@ async function mapNotionPageToItem(page) {
   const title = getText(findProp(props, 'Titre du texte', 'titre du texte', 'Titre'));
   const content = getText(findProp(props, 'Contenu', 'contenu', 'content'));
   
+  // Récupérer l'image
+  let imageUrl = '';
+  const imageProp = findProp(props, 'image', 'Image', 'image webflow', 'Image webflow', 'Cover', 'cover');
+  if (imageProp) {
+    imageUrl = getText(imageProp);
+  }
+  // Fallback sur la cover de la page si pas d'image dans les propriétés
+  if (!imageUrl && page.cover) {
+    if (page.cover.type === 'external' && page.cover.external?.url) {
+      imageUrl = page.cover.external.url;
+    } else if (page.cover.type === 'file' && page.cover.file?.url) {
+      imageUrl = page.cover.file.url;
+    }
+  }
+  
   const baseSlug = title
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, '')
@@ -69,6 +100,7 @@ async function mapNotionPageToItem(page) {
     date: getDate(findProp(props, 'Date d\'écriture', 'Date d\'ecriture', 'date')),
     slug: slug,
     content: content,
+    image: imageUrl,
     published,
   };
 }
