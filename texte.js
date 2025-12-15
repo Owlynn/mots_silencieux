@@ -5,12 +5,34 @@ function getSlugFromURL() {
     return params.get('slug');
 }
 
+function showLoader() {
+    const loader = document.getElementById('loader');
+    const heroSection = document.getElementById('hero-section');
+    if (loader && heroSection) {
+        loader.classList.add('active');
+        heroSection.style.opacity = '0.3';
+    }
+}
+
+function hideLoader() {
+    const loader = document.getElementById('loader');
+    const heroSection = document.getElementById('hero-section');
+    if (loader && heroSection) {
+        loader.classList.remove('active');
+        heroSection.style.opacity = '1';
+    }
+}
+
 async function chargerTexte() {
     const slug = getSlugFromURL();
     if (!slug) {
         document.getElementById('texte-text').innerHTML = '<p>Slug manquant</p>';
+        hideLoader();
         return;
     }
+
+    // Afficher le loader
+    showLoader();
 
     try {
         const response = await fetch(`${API_URL}/${slug}`);
@@ -18,40 +40,84 @@ async function chargerTexte() {
             throw new Error('Texte non trouvé');
         }
         const texte = await response.json();
+        
+        // Afficher le texte immédiatement
         afficherTexte(texte);
+        
+        // Attendre que l'image soit chargée si elle existe
+        if (texte.image) {
+            const imageSrc = `/api/image/${encodeURIComponent(texte.image)}`;
+            const img = new Image();
+            img.onload = () => {
+                hideLoader();
+            };
+            img.onerror = () => {
+                hideLoader();
+            };
+            img.src = imageSrc;
+        } else {
+            hideLoader();
+        }
+        
+        // Timeout de sécurité au cas où l'image ne se charge pas
+        setTimeout(() => {
+            hideLoader();
+        }, 5000);
     } catch (error) {
         console.error('Erreur lors du chargement du texte:', error);
         document.getElementById('texte-text').innerHTML = '<p>Erreur lors du chargement du texte</p>';
+        hideLoader();
+    }
+}
+
+function formaterDate(dateString) {
+    const mois = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 
+                  'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+    
+    try {
+        const date = new Date(dateString + 'T00:00:00');
+        if (isNaN(date.getTime())) {
+            return dateString; // Retourner la date originale si le parsing échoue
+        }
+        const jour = date.getDate();
+        const moisIndex = date.getMonth();
+        const annee = date.getFullYear();
+        return `le ${jour} ${mois[moisIndex]} ${annee}`;
+    } catch (e) {
+        return dateString; // Retourner la date originale en cas d'erreur
     }
 }
 
 function afficherTexte(texte) {
-    const imageDiv = document.getElementById('texte-image');
+    const heroSection = document.getElementById('hero-section');
+    const heroTitle = document.getElementById('hero-title');
+    const heroDate = document.getElementById('hero-date');
     const textDiv = document.getElementById('texte-text');
     
-    // Afficher l'image si elle existe
+    // Configurer le hero avec l'image en background
     if (texte.image) {
-        // Utiliser le proxy pour accélérer le chargement
         const imageSrc = `/api/image/${encodeURIComponent(texte.image)}`;
-        imageDiv.innerHTML = `
-            <div style="width: 200px;">
-                <img 
-                    src="${imageSrc}" 
-                    alt="${texte.title}" 
-                    loading="lazy"
-                    decoding="async"
-                    onerror="this.style.display='none'"
-                />
-            </div>
-        `;
+        heroSection.style.backgroundImage = `url('${imageSrc}')`;
+        heroSection.style.backgroundSize = 'cover';
+        heroSection.style.backgroundPosition = 'center';
+        heroSection.style.backgroundRepeat = 'no-repeat';
     } else {
-        imageDiv.innerHTML = '';
+        // Si pas d'image, utiliser la couleur de fond (couleur depuis CSS)
+        const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+        heroSection.style.backgroundColor = bgColor || '#dbe7c5';
     }
     
-    // Afficher le texte (h1 pour la hiérarchie des titres)
+    // Afficher le titre et la date dans le hero
+    heroTitle.textContent = texte.title;
+    if (texte.date) {
+        const dateFormatee = formaterDate(texte.date);
+        heroDate.innerHTML = `<time datetime="${texte.date}">${dateFormatee}</time>`;
+    } else {
+        heroDate.innerHTML = '';
+    }
+    
+    // Afficher uniquement le contenu du texte
     textDiv.innerHTML = `
-        <h1>${texte.title}</h1>
-        ${texte.date ? `<p><time datetime="${texte.date}">Date: ${texte.date}</time></p>` : ''}
         <div>${texte.content ? texte.content.replace(/\n/g, '<br>') : ''}</div>
     `;
 }
