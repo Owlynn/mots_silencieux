@@ -33,11 +33,19 @@ function calculerItemsParPage() {
 
 function afficherTextes() {
     const liste = document.getElementById('liste-textes');
+    const loader = document.getElementById('loader');
+    
+    // Afficher le loader
+    loader.classList.add('active');
+    liste.style.opacity = '0.3';
+    
     liste.innerHTML = '';
     
     const debut = (pageActuelle - 1) * itemsParPage;
     const fin = debut + itemsParPage;
     const textesAPager = tousLesTextes.slice(debut, fin);
+    
+    const imagesPromises = [];
     
     textesAPager.forEach(texte => {
         const card = document.createElement('a');
@@ -63,6 +71,20 @@ function afficherTextes() {
                     </div>
                 </div>
             `;
+            
+            // Attendre le chargement de l'image
+            const img = card.querySelector('img');
+            if (img) {
+                const imgPromise = new Promise((resolve) => {
+                    if (img.complete) {
+                        resolve();
+                    } else {
+                        img.onload = resolve;
+                        img.onerror = resolve; // Résoudre même en cas d'erreur
+                    }
+                });
+                imagesPromises.push(imgPromise);
+            }
         } else {
             card.innerHTML = `
                 <div class="card-inner">
@@ -83,7 +105,18 @@ function afficherTextes() {
         liste.appendChild(card);
     });
     
-    afficherPagination();
+    // Attendre que toutes les images soient chargées
+    Promise.all(imagesPromises).then(() => {
+        loader.classList.remove('active');
+        liste.style.opacity = '1';
+        afficherPagination();
+    });
+    
+    // Timeout de sécurité au cas où certaines images ne se chargent pas
+    setTimeout(() => {
+        loader.classList.remove('active');
+        liste.style.opacity = '1';
+    }, 5000);
 }
 
 function positionnerFleches() {
