@@ -16,12 +16,35 @@ function afficherTextes(textes) {
     liste.innerHTML = '';
     
     textes.forEach(texte => {
-        const li = document.createElement('li');
-        const a = document.createElement('a');
-        a.href = `texte.html?slug=${texte.slug}`;
-        a.textContent = texte.title;
-        li.appendChild(a);
-        liste.appendChild(li);
+        const card = document.createElement('a');
+        card.href = `texte.html?slug=${texte.slug}`;
+        card.style.cssText = 'display: block; position: relative; aspect-ratio: 1; overflow: hidden; text-decoration: none;';
+        
+        if (texte.image) {
+            const imageUrl = `/api/image/${encodeURIComponent(texte.image)}`;
+            card.innerHTML = `
+                <img 
+                    src="${imageUrl}" 
+                    alt="${texte.title}" 
+                    loading="lazy"
+                    decoding="async"
+                    style="width: 100%; height: 100%; object-fit: cover; display: block;"
+                />
+                <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(255, 255, 255, 0.9); color: black; padding: 10px; text-align: center; font-weight: bold; z-index: 1;">
+                    ${texte.title}
+                </div>
+            `;
+        } else {
+            card.innerHTML = `
+                <div style="width: 100%; height: 100%; background: #f0f0f0; display: flex; align-items: center; justify-content: center; position: relative;">
+                    <div style="position: absolute; bottom: 0; left: 0; right: 0; background: white; color: black; padding: 10px; text-align: center; font-weight: bold;">
+                        ${texte.title}
+                    </div>
+                </div>
+            `;
+        }
+        
+        liste.appendChild(card);
     });
 }
 
