@@ -1,4 +1,6 @@
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
 const { Client } = require('@notionhq/client');
 const fixtures = require('./lib/fixtures.json');
 require('dotenv').config();
@@ -124,10 +126,12 @@ async function fetchAllTextes() {
 }
 
 const server = http.createServer(async (req, res) => {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET');
-  res.setHeader('Content-Type', 'application/json');
+  // CORS headers pour les requêtes API
+  if (req.url.startsWith('/api/')) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET');
+    res.setHeader('Content-Type', 'application/json');
+  }
 
   if (req.method === 'OPTIONS') {
     res.writeHead(200);
@@ -135,6 +139,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // Routes API
   if (req.url === '/api/textes' && req.method === 'GET') {
     try {
       const textes = await fetchAllTextes();
@@ -166,8 +171,37 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  res.writeHead(404);
-  res.end(JSON.stringify({ error: 'Not found' }));
+  // Servir les fichiers statiques (HTML, JS)
+  // Extraire le chemin sans les query parameters
+  const urlPath = req.url.split('?')[0];
+  let filePath = '.' + urlPath;
+  if (filePath === './') {
+    filePath = './index.html';
+  }
+
+  const extname = String(path.extname(filePath)).toLowerCase();
+  const mimeTypes = {
+    '.html': 'text/html',
+    '.js': 'text/javascript',
+    '.json': 'application/json'
+  };
+
+  const contentType = mimeTypes[extname] || 'application/octet-stream';
+
+  fs.readFile(filePath, (error, content) => {
+    if (error) {
+      if (error.code == 'ENOENT') {
+        res.writeHead(404, { 'Content-Type': 'text/html' });
+        res.end('404 - File Not Found', 'utf-8');
+      } else {
+        res.writeHead(500);
+        res.end('Server Error: ' + error.code, 'utf-8');
+      }
+    } else {
+      res.writeHead(200, { 'Content-Type': contentType });
+      res.end(content, 'utf-8');
+    }
+  });
 });
 
 const PORT = process.env.PORT || 3001;

@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3001/api/textes';
+const API_URL = '/api/textes';
 
 async function chargerTextes() {
     try {

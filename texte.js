@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3001/api/texte';
+const API_URL = '/api/texte';
 
 function getSlugFromURL() {
     const params = new URLSearchParams(window.location.search);
