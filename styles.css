@@ -65,6 +65,14 @@ header {
   box-sizing: border-box;
 }
 
+/* Header sur la page texte - plus clair et moins transparent */
+body.page-texte header,
+main.page-texte ~ header {
+  background-color: rgba(219, 231, 197, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
 header h1,
 header h1 a {
   margin: 0;
