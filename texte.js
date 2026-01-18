@@ -62,30 +62,18 @@ async function chargerTexte() {
         }
         const texte = await response.json();
         
+        // Afficher le contenu immédiatement sans attendre l'image
         afficherTexte(texte);
+        hideLoader();
         
-        // Attendre que l'image soit chargée si elle existe
+        // Charger l'image en arrière-plan si elle existe
+        // (le navigateur la mettra en cache et l'affichera dès qu'elle sera prête)
         if (texte.image) {
             const imageSrc = `/api/image/${encodeURIComponent(texte.image)}`;
             const img = new Image();
-            let imageLoaded = false;
-            
-            const finishLoading = () => {
-                if (!imageLoaded) {
-                    imageLoaded = true;
-                    if (loaderTimeout) clearTimeout(loaderTimeout);
-                    hideLoader();
-                }
-            };
-            
-            img.onload = finishLoading;
-            img.onerror = finishLoading;
             img.src = imageSrc;
-            
-            // Timeout de sécurité
-            loaderTimeout = setTimeout(finishLoading, 5000);
-        } else {
-            hideLoader();
+            // L'image se chargera automatiquement et sera affichée dès qu'elle est prête
+            // grâce au CSS background-image qui a déjà été défini dans afficherTexte()
         }
     } catch (error) {
         console.error('Erreur lors du chargement du texte:', error);
