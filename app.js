@@ -173,10 +173,20 @@ function positionnerFleches() {
     const grille = document.getElementById('liste-textes');
     if (!grille || grille.children.length === 0) return;
     
-    // Calculer la position de la 2e ligne
-    const premierElement = grille.children[0];
+    // Trouver le premier élément visible (pas caché)
+    const premiersElementsVisibles = Array.from(grille.children).filter(card => {
+        return card.style.display !== 'none' && !card.hasAttribute('data-cache');
+    });
+    
+    if (premiersElementsVisibles.length === 0) return;
+    
+    const premierElement = premiersElementsVisibles[0];
     const rectGrille = grille.getBoundingClientRect();
     const rectPremier = premierElement.getBoundingClientRect();
+    
+    // Si le rectangle est vide (élément caché), on ne peut pas calculer
+    if (rectPremier.height === 0) return;
+    
     const hauteurCarte = rectPremier.height;
     const gap = 20; // gap de la grille
     
@@ -362,6 +372,9 @@ function changerPage(nouvellePage) {
         
         afficherPagination();
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        // Repositionner les flèches après que le DOM soit rendu
+        setTimeout(positionnerFleches, 100);
         
         // Annoncer le changement de page aux lecteurs d'écran
         const ariaLive = document.getElementById('aria-live-region');
