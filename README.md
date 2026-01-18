@@ -47,4 +47,3 @@ Le serveur inclut plusieurs mesures de sécurité :
 - ✅ Validation du Content-Type des images
 - ✅ Limitation de taille des fichiers images (10MB)
 
-
