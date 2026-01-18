@@ -107,6 +107,11 @@ function afficherTexte(texte) {
         return;
     }
     
+    // Mettre à jour le titre de l'onglet avec le titre du texte
+    if (texte.title) {
+        document.title = texte.title;
+    }
+    
     // Configurer le hero avec l'image en background
     if (texte.image) {
         const imageSrc = `/api/image/${encodeURIComponent(texte.image)}`;
