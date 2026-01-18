@@ -44,6 +44,81 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// Cache pour les images déjà en cours de chargement
+const imagesEnChargement = new Set();
+
+// Créer une carte pour un texte donné
+function creerCarte(texte, imagesPromises, cache = false) {
+    const card = document.createElement('a');
+    card.href = `texte.html?slug=${encodeURIComponent(texte.slug)}`;
+    card.className = texte.image ? 'card' : 'card card-no-image';
+    
+    // Si c'est pour le cache, marquer la carte comme cachée
+    if (cache) {
+        card.style.display = 'none';
+        card.setAttribute('data-cache', 'true');
+    }
+    
+    const titleEscaped = escapeHtml(texte.title);
+    
+    if (texte.image) {
+        const imageUrl = `/api/image/${encodeURIComponent(texte.image)}`;
+        
+        // Éviter de charger la même image plusieurs fois
+        const imageKey = imageUrl;
+        const isImageEnChargement = imagesEnChargement.has(imageKey);
+        
+        card.innerHTML = `
+            <div class="card-inner">
+                <div class="card-front">
+                    <img 
+                        src="${imageUrl}" 
+                        alt="${titleEscaped}" 
+                        loading="${cache ? 'lazy' : 'eager'}"
+                        decoding="async"
+                    />
+                </div>
+                <div class="card-back">
+                    <div class="card-title">${titleEscaped}</div>
+                </div>
+            </div>
+        `;
+        
+        const img = card.querySelector('img');
+        if (img && !isImageEnChargement) {
+            imagesEnChargement.add(imageKey);
+            const imgPromise = new Promise((resolve) => {
+                if (img.complete) {
+                    resolve();
+                } else {
+                    img.onload = () => {
+                        imagesEnChargement.delete(imageKey);
+                        resolve();
+                    };
+                    img.onerror = () => {
+                        imagesEnChargement.delete(imageKey);
+                        resolve();
+                    };
+                }
+            });
+            imagesPromises.push(imgPromise);
+        }
+    } else {
+        card.innerHTML = `
+            <div class="card-inner">
+                <div class="card-front">
+                    <div class="card-title">${titleEscaped}</div>
+                </div>
+                <div class="card-back">
+                    <div class="card-title">${titleEscaped}</div>
+                </div>
+            </div>
+        `;
+    }
+    
+    return card;
+}
+
 function afficherTextes() {
     const liste = document.getElementById('liste-textes');
     const loader = document.getElementById('loader');
@@ -55,59 +130,24 @@ function afficherTextes() {
     
     const debut = (pageActuelle - 1) * itemsParPage;
     const fin = debut + itemsParPage;
+    const finPrechargement = Math.min(debut + itemsParPage * 2, tousLesTextes.length);
+    
+    // Textes à afficher (page actuelle)
     const textesAPager = tousLesTextes.slice(debut, fin);
+    // Textes à précharger (page suivante)
+    const textesAPrecharger = tousLesTextes.slice(fin, finPrechargement);
+    
     const imagesPromises = [];
     
+    // Créer et afficher les cartes de la page actuelle
     textesAPager.forEach(texte => {
-        const card = document.createElement('a');
-        card.href = `texte.html?slug=${encodeURIComponent(texte.slug)}`;
-        card.className = texte.image ? 'card' : 'card card-no-image';
-        
-        const titleEscaped = escapeHtml(texte.title);
-        
-        if (texte.image) {
-            const imageUrl = `/api/image/${encodeURIComponent(texte.image)}`;
-            card.innerHTML = `
-                <div class="card-inner">
-                    <div class="card-front">
-                        <img 
-                            src="${imageUrl}" 
-                            alt="${titleEscaped}" 
-                            loading="lazy"
-                            decoding="async"
-                        />
-                    </div>
-                    <div class="card-back">
-                        <div class="card-title">${titleEscaped}</div>
-                    </div>
-                </div>
-            `;
-            
-            const img = card.querySelector('img');
-            if (img) {
-                const imgPromise = new Promise((resolve) => {
-                    if (img.complete) {
-                        resolve();
-                    } else {
-                        img.onload = resolve;
-                        img.onerror = resolve;
-                    }
-                });
-                imagesPromises.push(imgPromise);
-            }
-        } else {
-            card.innerHTML = `
-                <div class="card-inner">
-                    <div class="card-front">
-                        <div class="card-title">${titleEscaped}</div>
-                    </div>
-                    <div class="card-back">
-                        <div class="card-title">${titleEscaped}</div>
-                    </div>
-                </div>
-            `;
-        }
-        
+        const card = creerCarte(texte, imagesPromises, false);
+        liste.appendChild(card);
+    });
+    
+    // Créer et précharger les cartes de la page suivante (cachées)
+    textesAPrecharger.forEach(texte => {
+        const card = creerCarte(texte, imagesPromises, true);
         liste.appendChild(card);
     });
     
@@ -117,9 +157,12 @@ function afficherTextes() {
         loader.classList.remove('active');
         liste.style.opacity = '1';
         afficherPagination();
+        
+        // Précharger la page suivante en arrière-plan après affichage
+        prechargerPageSuivante();
     };
     
-    // Attendre que toutes les images soient chargées
+    // Attendre que toutes les images de la page actuelle soient chargées
     Promise.all(imagesPromises).then(finishLoading);
     
     // Timeout de sécurité
@@ -213,8 +256,126 @@ function afficherPagination() {
     }
 }
 
+// Précharger la page suivante en arrière-plan
+function prechargerPageSuivante() {
+    const totalPages = Math.ceil(tousLesTextes.length / itemsParPage);
+    if (pageActuelle >= totalPages) return; // Pas de page suivante
+    
+    const pageSuivante = pageActuelle + 1;
+    const debut = (pageSuivante - 1) * itemsParPage;
+    const fin = Math.min(debut + itemsParPage, tousLesTextes.length);
+    const textesPageSuivante = tousLesTextes.slice(debut, fin);
+    
+    // Vérifier si les cartes sont déjà dans le DOM (préchargées)
+    const liste = document.getElementById('liste-textes');
+    if (!liste) return;
+    
+    const cartesCachees = liste.querySelectorAll('[data-cache="true"]');
+    const nombreCartesCachees = cartesCachees.length;
+    
+    // Si on a déjà préchargé assez de cartes, on n'a rien à faire
+    if (nombreCartesCachees >= textesPageSuivante.length) {
+        return;
+    }
+    
+    // Sinon, précharger les cartes manquantes en arrière-plan
+    const imagesPromises = [];
+    textesPageSuivante.forEach((texte, index) => {
+        // Vérifier si cette carte existe déjà
+        const carteExistante = Array.from(liste.children).find(card => {
+            return card.href && card.href.includes(encodeURIComponent(texte.slug));
+        });
+        
+        if (!carteExistante) {
+            const card = creerCarte(texte, imagesPromises, true);
+            liste.appendChild(card);
+        }
+    });
+}
+
 function changerPage(nouvellePage) {
     if (nouvellePage < 1 || nouvellePage > Math.ceil(tousLesTextes.length / itemsParPage)) return;
+    
+    const liste = document.getElementById('liste-textes');
+    if (!liste) return;
+    
+    // Vérifier si la page demandée est déjà préchargée (c'était la page suivante)
+    const debutDemandee = (nouvellePage - 1) * itemsParPage;
+    const finDemandee = debutDemandee + itemsParPage;
+    const textesPageDemandee = tousLesTextes.slice(debutDemandee, finDemandee);
+    
+    // Chercher les cartes préchargées pour cette page dans le DOM
+    const toutesLesCartes = Array.from(liste.children);
+    const cartesPageDemandee = [];
+    let toutesLesCartesTrouvees = true;
+    
+    textesPageDemandee.forEach(texte => {
+        const carte = toutesLesCartes.find(card => {
+            return card.href && card.href.includes(encodeURIComponent(texte.slug));
+        });
+        if (carte) {
+            cartesPageDemandee.push(carte);
+        } else {
+            toutesLesCartesTrouvees = false;
+        }
+    });
+    
+    // Si toutes les cartes de la page demandée sont déjà dans le DOM (préchargées), les révéler
+    if (toutesLesCartesTrouvees && cartesPageDemandee.length === textesPageDemandee.length) {
+        // Cacher toutes les cartes
+        toutesLesCartes.forEach(card => {
+            card.style.display = 'none';
+            card.setAttribute('data-cache', 'true');
+        });
+        
+        // Afficher les cartes de la page demandée
+        cartesPageDemandee.forEach(card => {
+            card.style.display = '';
+            card.removeAttribute('data-cache');
+        });
+        
+        // Précharger les cartes suivantes si nécessaire
+        const finPrechargement = Math.min(debutDemandee + itemsParPage * 2, tousLesTextes.length);
+        const textesAPrecharger = tousLesTextes.slice(finDemandee, finPrechargement);
+        const imagesPromises = [];
+        
+        textesAPrecharger.forEach(texte => {
+            // Vérifier si la carte existe déjà
+            const carteExistante = toutesLesCartes.find(card => {
+                return card.href && card.href.includes(encodeURIComponent(texte.slug));
+            });
+            
+            if (!carteExistante) {
+                const card = creerCarte(texte, imagesPromises, true);
+                liste.appendChild(card);
+            }
+        });
+        
+        pageActuelle = nouvellePage;
+        
+        // Pas besoin de loader, c'est instantané !
+        const loader = document.getElementById('loader');
+        if (loader) {
+            loader.classList.remove('active');
+        }
+        liste.style.opacity = '1';
+        
+        afficherPagination();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        // Annoncer le changement de page aux lecteurs d'écran
+        const ariaLive = document.getElementById('aria-live-region');
+        if (ariaLive) {
+            ariaLive.textContent = `Page ${nouvellePage} sur ${Math.ceil(tousLesTextes.length / itemsParPage)}`;
+        }
+        
+        // Précharger la page suivante
+        prechargerPageSuivante();
+        
+        return;
+    }
+    
+    // Sinon, utiliser la méthode normale
     pageActuelle = nouvellePage;
     afficherTextes();
     afficherPagination();
