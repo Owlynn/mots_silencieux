@@ -101,43 +101,35 @@ async function fetchAllTextes() {
   const notion = new Client({ auth: NOTION_TOKEN });
 
   try {
-    const searchResponse = await notion.search({
-      filter: {
-        property: 'object',
-        value: 'page'
-      },
-      page_size: 100
-    });
-    
-    const normalizedDbId = DATABASE_ID.replace(/-/g, '');
-    const dbPages = searchResponse.results.filter(page => {
-      const pageDbId = page.parent?.database_id?.replace(/-/g, '');
-      return pageDbId === normalizedDbId;
-    });
-    
-    let filteredPages = dbPages;
-    try {
-      const pagesWithTags = dbPages.filter(page => 
-        page.properties?.Tags?.multi_select?.some(tag => 
-          tag.name.toLowerCase() === 'publiable'
-        )
-      );
-      if (pagesWithTags.length > 0) {
-        filteredPages = pagesWithTags;
-      }
-    } catch (tagError) {
-      // Ignorer
-    }
-    
-    const sortedPages = filteredPages.sort((a, b) => {
+    let allPages = [];
+    let cursor = undefined;
+
+    do {
+      const response = await notion.databases.query({
+        database_id: DATABASE_ID,
+        page_size: 100,
+        ...(cursor ? { start_cursor: cursor } : {})
+      });
+
+      allPages = allPages.concat(response.results);
+      cursor = response.has_more ? response.next_cursor : undefined;
+    } while (cursor);
+
+    allPages = allPages.filter(page =>
+      page.properties?.Tags?.multi_select?.some(tag =>
+        tag.name.toLowerCase() === 'publiable'
+      )
+    );
+
+    const sortedPages = allPages.sort((a, b) => {
       const dateA = new Date(a.properties?.['Date d\'écriture']?.date?.start || 0);
       const dateB = new Date(b.properties?.['Date d\'écriture']?.date?.start || 0);
       return dateB - dateA;
     });
-    
+
     const items = (await Promise.all(sortedPages.map(mapNotionPageToItem)))
       .filter(item => item && item.title && item.published !== false);
-    
+
     console.log('✅ Notion: Récupéré', items.length, 'textes');
     return items;
   } catch (error) {
@@ -154,6 +146,42 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
+  }
+
+  // Mode debug : /api/textes?debug=true
+  if (req.query?.debug === 'true') {
+    const NOTION_TOKEN = process.env.NOTION_TOKEN;
+    const DATABASE_ID = process.env.NOTION_DATABASE_ID;
+    const notion = new Client({ auth: NOTION_TOKEN });
+    let allPages = [];
+    let cursor = undefined;
+    do {
+      const response = await notion.databases.query({
+        database_id: DATABASE_ID,
+        page_size: 100,
+        ...(cursor ? { start_cursor: cursor } : {})
+      });
+      allPages = allPages.concat(response.results);
+      cursor = response.has_more ? response.next_cursor : undefined;
+    } while (cursor);
+    const tagCounts = {};
+    allPages.forEach(page => {
+      const tags = page.properties?.Tags?.multi_select || [];
+      if (tags.length === 0) {
+        tagCounts['(aucun tag)'] = (tagCounts['(aucun tag)'] || 0) + 1;
+      }
+      tags.forEach(t => {
+        tagCounts[t.name] = (tagCounts[t.name] || 0) + 1;
+      });
+    });
+    return res.status(200).json({
+      totalPages: allPages.length,
+      tagCounts,
+      sample: allPages.slice(0, 3).map(p => ({
+        title: p.properties?.['Titre du texte']?.title?.[0]?.plain_text || '(sans titre)',
+        tags: p.properties?.Tags?.multi_select?.map(t => t.name) || []
+      }))
+    });
   }
 
   try {
