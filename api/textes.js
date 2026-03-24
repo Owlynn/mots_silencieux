@@ -1,4 +1,3 @@
-const { Client } = require('@notionhq/client');
 const fixtures = require('../lib/fixtures.json');
 
 function getText(prop) {
@@ -98,19 +97,28 @@ async function fetchAllTextes() {
     return fixtures.filter(item => item && item.title);
   }
 
-  const notion = new Client({ auth: NOTION_TOKEN });
-
   try {
     let allPages = [];
     let cursor = undefined;
 
     do {
-      const response = await notion.databases.query({
-        database_id: DATABASE_ID,
-        page_size: 100,
-        ...(cursor ? { start_cursor: cursor } : {})
+      const res = await fetch(`https://api.notion.com/v1/databases/${DATABASE_ID}/query`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${NOTION_TOKEN}`,
+          'Notion-Version': '2022-06-28',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          page_size: 100,
+          ...(cursor ? { start_cursor: cursor } : {})
+        })
       });
-
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(`Notion API error: ${err.message}`);
+      }
+      const response = await res.json();
       allPages = allPages.concat(response.results);
       cursor = response.has_more ? response.next_cursor : undefined;
     } while (cursor);
