@@ -1,4 +1,3 @@
-const { Client } = require('@notionhq/client');
 const fixtures = require('../../lib/fixtures.json');
 
 function getText(prop) {
@@ -97,46 +96,41 @@ async function fetchAllTextes() {
     return fixtures.filter(item => item && item.title);
   }
 
-  const notion = new Client({ auth: NOTION_TOKEN });
-
   try {
-    const searchResponse = await notion.search({
-      filter: {
-        property: 'object',
-        value: 'page'
-      },
-      page_size: 100
-    });
-    
-    const normalizedDbId = DATABASE_ID.replace(/-/g, '');
-    const dbPages = searchResponse.results.filter(page => {
-      const pageDbId = page.parent?.database_id?.replace(/-/g, '');
-      return pageDbId === normalizedDbId;
-    });
-    
-    let filteredPages = dbPages;
-    try {
-      const pagesWithTags = dbPages.filter(page => 
-        page.properties?.Tags?.multi_select?.some(tag => 
-          tag.name.toLowerCase() === 'publiable'
-        )
-      );
-      if (pagesWithTags.length > 0) {
-        filteredPages = pagesWithTags;
+    let allPages = [];
+    let cursor = undefined;
+
+    do {
+      const res = await fetch(`https://api.notion.com/v1/databases/${DATABASE_ID}/query`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${NOTION_TOKEN}`,
+          'Notion-Version': '2022-06-28',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          page_size: 100,
+          ...(cursor ? { start_cursor: cursor } : {})
+        })
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(`Notion API error: ${err.message}`);
       }
-    } catch (tagError) {
-      // Ignorer
-    }
-    
-    const sortedPages = filteredPages.sort((a, b) => {
-      const dateA = new Date(a.properties?.['Date d\'écriture']?.date?.start || 0);
-      const dateB = new Date(b.properties?.['Date d\'écriture']?.date?.start || 0);
-      return dateB - dateA;
-    });
-    
-    const items = (await Promise.all(sortedPages.map(mapNotionPageToItem)))
+      const response = await res.json();
+      allPages = allPages.concat(response.results);
+      cursor = response.has_more ? response.next_cursor : undefined;
+    } while (cursor);
+
+    const filteredPages = allPages.filter(page =>
+      page.properties?.Tags?.multi_select?.some(tag =>
+        tag.name.toLowerCase() === 'publiable'
+      )
+    );
+
+    const items = (await Promise.all(filteredPages.map(mapNotionPageToItem)))
       .filter(item => item && item.title && item.published !== false);
-    
+
     return items;
   } catch (error) {
     console.error('Erreur Notion:', error);
