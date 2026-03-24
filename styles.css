@@ -287,6 +287,20 @@ main.page-texte {
   padding: 0;
 }
 
+/* Skeleton */
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.card-skeleton {
+  aspect-ratio: 1;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #c8d9a8 25%, #d8e8b8 50%, #c8d9a8 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
 /* Loader */
 .loader {
   position: fixed;

@@ -6,6 +6,15 @@ let itemsParPage = 12; // Par défaut, sera ajusté dynamiquement
 async function chargerTextes() {
     const loader = document.getElementById('loader');
     if (loader) loader.classList.add('active');
+    const liste = document.getElementById('liste-textes');
+    if (liste) {
+        liste.innerHTML = '';
+        for (let i = 0; i < itemsParPage; i++) {
+            const skeleton = document.createElement('div');
+            skeleton.className = 'card-skeleton';
+            liste.appendChild(skeleton);
+        }
+    }
     try {
         const response = await fetch(API_URL);
         tousLesTextes = await response.json();
