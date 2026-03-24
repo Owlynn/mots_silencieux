@@ -82,6 +82,7 @@ async function mapNotionPageToItem(page) {
     title: title,
     date: getDate(findProp(props, 'Date d\'écriture', 'Date d\'ecriture', 'date')),
     slug: slug,
+    pageId: page.id,
     content: content,
     image: imageUrl,
     published,

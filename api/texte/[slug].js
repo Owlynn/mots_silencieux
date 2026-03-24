@@ -150,11 +150,30 @@ module.exports = async (req, res) => {
 
   try {
     const slug = req.query.slug;
+    const pageId = req.query.id;
     if (!slug) {
       res.status(400).json({ error: 'Slug manquant' });
       return;
     }
 
+    // Fetch direct par ID Notion si disponible (rapide)
+    if (pageId) {
+      const NOTION_TOKEN = process.env.NOTION_TOKEN;
+      const pageRes = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
+        headers: {
+          'Authorization': `Bearer ${NOTION_TOKEN}`,
+          'Notion-Version': '2022-06-28'
+        }
+      });
+      if (pageRes.ok) {
+        const page = await pageRes.json();
+        const texte = await mapNotionPageToItem(page);
+        res.status(200).json(texte);
+        return;
+      }
+    }
+
+    // Fallback : recherche par slug dans toute la DB
     const textes = await fetchAllTextes();
     const texte = textes.find(t => t.slug === slug);
     

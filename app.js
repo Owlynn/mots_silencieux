@@ -61,7 +61,7 @@ const imagesEnChargement = new Set();
 // Créer une carte pour un texte donné
 function creerCarte(texte, imagesPromises, cache = false) {
     const card = document.createElement('a');
-    card.href = `texte.html?slug=${encodeURIComponent(texte.slug)}`;
+    card.href = `texte.html?slug=${encodeURIComponent(texte.slug)}${texte.pageId ? `&id=${encodeURIComponent(texte.pageId)}` : ''}`;
     card.className = texte.image ? 'card' : 'card card-no-image';
     
     // Si c'est pour le cache, marquer la carte comme cachée

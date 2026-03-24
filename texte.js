@@ -9,9 +9,9 @@ const elements = {
     texteText: null
 };
 
-function getSlugFromURL() {
+function getParamsFromURL() {
     const params = new URLSearchParams(window.location.search);
-    return params.get('slug');
+    return { slug: params.get('slug'), id: params.get('id') };
 }
 
 function initElements() {
@@ -43,7 +43,7 @@ function escapeHtml(text) {
 }
 
 async function chargerTexte() {
-    const slug = getSlugFromURL();
+    const { slug, id } = getParamsFromURL();
     if (!slug) {
         if (elements.texteText) {
             elements.texteText.innerHTML = '<p>Slug manquant</p>';
@@ -56,7 +56,8 @@ async function chargerTexte() {
     let loaderTimeout;
 
     try {
-        const response = await fetch(`${API_URL}/${slug}`);
+        const url = id ? `${API_URL}/${slug}?id=${encodeURIComponent(id)}` : `${API_URL}/${slug}`;
+        const response = await fetch(url);
         if (!response.ok) {
             throw new Error('Texte non trouvé');
         }

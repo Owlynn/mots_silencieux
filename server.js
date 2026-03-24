@@ -265,6 +265,7 @@ async function mapNotionPageToItem(page) {
     title: title,
     date: getDate(findProp(props, 'Date d\'écriture', 'Date d\'ecriture', 'date')),
     slug: slug,
+    pageId: page.id,
     content: content,
     image: imageUrl,
     published,
@@ -386,7 +387,28 @@ const server = http.createServer(async (req, res) => {
 
   if (req.url.startsWith('/api/texte/') && req.method === 'GET') {
     try {
-      const slug = req.url.split('/api/texte/')[1].split('?')[0];
+      const urlObj = new URL(req.url, `http://localhost`);
+      const slug = urlObj.pathname.split('/api/texte/')[1];
+      const pageId = urlObj.searchParams.get('id');
+
+      // Fetch direct par ID Notion si disponible (rapide)
+      if (pageId && notion) {
+        const pageRes = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
+          headers: {
+            'Authorization': `Bearer ${process.env.NOTION_TOKEN}`,
+            'Notion-Version': '2022-06-28'
+          }
+        });
+        if (pageRes.ok) {
+          const page = await pageRes.json();
+          const texte = await mapNotionPageToItem(page);
+          res.writeHead(200);
+          res.end(JSON.stringify(texte));
+          return;
+        }
+      }
+
+      // Fallback : recherche par slug
       const textes = await fetchAllTextes();
       const texte = textes.find(t => t.slug === slug);
       if (texte) {
