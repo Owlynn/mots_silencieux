@@ -4,6 +4,8 @@ let pageActuelle = 1;
 let itemsParPage = 12; // Par défaut, sera ajusté dynamiquement
 
 async function chargerTextes() {
+    const loader = document.getElementById('loader');
+    if (loader) loader.classList.add('active');
     try {
         const response = await fetch(API_URL);
         tousLesTextes = await response.json();
