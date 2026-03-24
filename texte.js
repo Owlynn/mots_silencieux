@@ -108,9 +108,32 @@ function afficherTexte(texte) {
         return;
     }
     
-    // Mettre à jour le titre de l'onglet avec le titre du texte
+    // Mettre à jour le titre et les metas SEO
     if (texte.title) {
-        document.title = texte.title;
+        const fullTitle = `${texte.title} — poème de Jessalynn Choby`;
+        document.title = fullTitle;
+
+        const description = `« ${texte.title} » — poème de Jessalynn Choby, extrait de Des mots silencieux.`;
+        const pageUrl = `https://mots-silencieux.vercel.app/texte.html?slug=${encodeURIComponent(texte.slug)}`;
+
+        document.querySelector('meta[name="description"]')?.setAttribute('content', description);
+        document.querySelector('link[rel="canonical"]')?.setAttribute('href', pageUrl);
+        document.querySelector('meta[property="og:title"]')?.setAttribute('content', fullTitle);
+        document.querySelector('meta[property="og:description"]')?.setAttribute('content', description);
+        document.querySelector('meta[property="og:url"]')?.setAttribute('content', pageUrl);
+
+        const jsonLd = document.getElementById('json-ld');
+        if (jsonLd) {
+            jsonLd.textContent = JSON.stringify({
+                '@context': 'https://schema.org',
+                '@type': 'Poem',
+                'name': texte.title,
+                'author': { '@type': 'Person', 'name': 'Jessalynn Choby', 'url': 'https://www.jessalynn.fr' },
+                'isPartOf': { '@type': 'WebSite', 'name': 'Des mots silencieux', 'url': 'https://mots-silencieux.vercel.app/' },
+                'dateCreated': texte.date || undefined,
+                'inLanguage': 'fr'
+            });
+        }
     }
     
     // Configurer le hero avec l'image en background
