@@ -20,7 +20,7 @@ const DATABASE_ID = process.env.NOTION_DATABASE_ID;
 // Configuration CORS - Liste des origines autorisées
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS 
   ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
-  : ['http://localhost:3001', 'http://localhost:3000', 'https://mots-silencieux.vercel.app'];
+  : ['http://localhost:3001', 'http://localhost:3000', 'https://des-mots-silencieux.fr'];
 
 // Rate limiting simple (par IP)
 const rateLimitStore = new Map();

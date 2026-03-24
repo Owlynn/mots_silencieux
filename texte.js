@@ -114,7 +114,7 @@ function afficherTexte(texte) {
         document.title = fullTitle;
 
         const description = `« ${texte.title} » — poème de Jessalynn Choby, extrait de Des mots silencieux.`;
-        const pageUrl = `https://mots-silencieux.vercel.app/texte.html?slug=${encodeURIComponent(texte.slug)}`;
+        const pageUrl = `https://des-mots-silencieux.fr/texte.html?slug=${encodeURIComponent(texte.slug)}`;
 
         document.querySelector('meta[name="description"]')?.setAttribute('content', description);
         document.querySelector('link[rel="canonical"]')?.setAttribute('href', pageUrl);
@@ -129,7 +129,7 @@ function afficherTexte(texte) {
                 '@type': 'Poem',
                 'name': texte.title,
                 'author': { '@type': 'Person', 'name': 'Jessalynn Choby', 'url': 'https://www.jessalynn.fr' },
-                'isPartOf': { '@type': 'WebSite', 'name': 'Des mots silencieux', 'url': 'https://mots-silencieux.vercel.app/' },
+                'isPartOf': { '@type': 'WebSite', 'name': 'Des mots silencieux', 'url': 'https://des-mots-silencieux.fr/' },
                 'dateCreated': texte.date || undefined,
                 'inLanguage': 'fr'
             });
